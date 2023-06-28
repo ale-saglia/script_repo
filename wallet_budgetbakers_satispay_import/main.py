@@ -3,12 +3,15 @@
 import csv
 import os
 import sys
+import yaml
+from datetime import datetime
 
+config = None
 database = []
 
 
 class Entry:
-    def __init__(self, description, category, dateTime, value, currency):
+    def __init__(self, description, dateTime, value, currency):
         import arrow
         import datetime
 
@@ -21,83 +24,107 @@ class Entry:
 
         self.beneficiary = description
 
-        if category == "Person to Person":
-            self.description = "Trasferimento a/da " + description
-        elif category == "Customer to Business":
-            self.description = "Pagamento a " + description
-        elif category == "Bank":
-            self.description = description
-        else:
-            self.description = ""
-
     def __repr__(self):
-        return str(self.date)
+        return str(self.date + ", " + self.time + ", " + self.beneficiary + ", " + str(self.value) + ", " + self.currency)
 
 
 def main():
     from tkinter import Tk
     from tkinter.filedialog import askopenfilename
 
+    loadConfig()
+
     Tk().withdraw()
-    filename = (
-        askopenfilename()
-    )
+    filename = askopenfilename()
     print("File selected: " + filename + "\n")
     loadCSV(filename)
-    writeCSV("output.csv")
+
+    outputFile = writeCSV(datetime.now().strftime("%Y%m%d") + "_output.csv")
+    mailSender(outputFile)
+
     input("Press Enter to continue...")
+    os.remove(outputFile)
+
+
+def loadConfig():
+    global config
+
+    with open(os.path.join(sys.path[0], "config.yaml"), "r") as fileName:
+        config = yaml.load(fileName, Loader=yaml.FullLoader)
 
 
 def loadCSV(fileName):
-    with open(fileName) as csv_file:
+    with open(fileName, newline='', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=",")
         line_count = 0
         for row in csv_reader:
             if line_count > 0:
-                entry=Entry(row[1], row[3], row[4], row[5], row[6])
+                entry = Entry(row[1], row[4], row[5], row[6])
                 database.append(entry)
                 print(entry)
             line_count += 1
 
 
 def writeCSV(fileName):
-    with open(os.path.join(sys.path[0], fileName), mode="w", newline="") as csv_file:
+    filePath = os.path.join(sys.path[0], fileName)
+    with open(filePath, mode="w", newline="") as csv_file:
         csv_writer = csv.writer(
             csv_file, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
         csv_writer.writerow(
-            ["date", "time", "description", "beneficiary", "value", "currency"]
+            ["date", "time", "beneficiary", "value", "currency"]
         )
         for index in database:
             csv_writer.writerow(
                 [
                     index.date,
                     index.time,
-                    index.description,
                     index.beneficiary,
                     str(index.value),
                     index.currency,
                 ]
             )
 
+        return filePath
 
-"""def mailSender(message):
-    print(message)
+
+def mailSender(filePath):
+    import smtplib
+    from os.path import basename
+    from email.mime.application import MIMEApplication
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
     try:
-        server = smtplib.SMTP(cfg["Email"]["smtpServer"],
-                              cfg["Email"]["smtpPort"])
+        message = MIMEMultipart()
+        message["From"] = config["senderAddress"]
+        message["To"] = config["recipientAddress"]
+        message["Subject"] = "Esportazione Satispay del " + datetime.now().strftime(
+            "%d/%m/%Y"
+        )
+
+        attachment = MIMEText(open(filePath).read())
+        attachment.add_header(
+            "Content-Disposition", "attachment", filename=os.path.basename(filePath)
+        )
+        message.attach(attachment)
+
+        server = smtplib.SMTP(config["smtpServer"], config["smtpPort"])
         server.ehlo()
         server.starttls()
         server.ehlo
-        server.login(cfg["Email"]["user"], cfg["Email"]["password"])
+        server.login(config["smtpUser"], config["smtpPassword"])
 
-        server.send_message(message)
+        server.sendmail(
+            config["senderAddress"], config["recipientAddress"], message.as_string()
+        )
+
         print("Mail sent")
     except:
-        print('Something went wrong...')
+        print("Something went wrong...")
         return
     finally:
-        server.quit()"""
+        server.quit()
 
 
 if __name__ == "__main__":

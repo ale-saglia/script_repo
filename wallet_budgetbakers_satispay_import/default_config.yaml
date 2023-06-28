@@ -1,0 +1,8 @@
+#Rename me to config.yaml
+
+smtpServer:
+smtpPort:
+smtpUser:
+smtpPassword:
+senderAddress:
+recipientAddress:
