@@ -6,6 +6,7 @@ import sys
 
 database = []
 
+
 class Entry:
     def __init__(self, description, category, dateTime, value, currency):
         import arrow
@@ -21,21 +22,29 @@ class Entry:
         self.beneficiary = description
 
         if category == "Person to Person":
-            self.description="Trasferimento a/da " + description
+            self.description = "Trasferimento a/da " + description
         elif category == "Customer to Business":
             self.description = "Pagamento a " + description
         elif category == "Bank":
             self.description = description
-        else: 
+        else:
             self.description = ""
 
+
 def main():
-    loadCSV("input.csv")
+    from tkinter import Tk
+    from tkinter.filedialog import askopenfilename
+
+    Tk().withdraw()
+    filename = (
+        askopenfilename()
+    )
+    loadCSV(filename)
     writeCSV("output.csv")
 
 
 def loadCSV(fileName):
-    with open(os.path.join(sys.path[0], fileName)) as csv_file:
+    with open(fileName) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=",")
         line_count = 0
         for row in csv_reader:
@@ -43,12 +52,27 @@ def loadCSV(fileName):
                 database.append(Entry(row[1], row[3], row[4], row[5], row[6]))
             line_count += 1
 
+
 def writeCSV(fileName):
-    with open(os.path.join(sys.path[0], fileName), mode='w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['date', 'time', 'description', 'beneficiary', 'value', 'currency'])
+    with open(os.path.join(sys.path[0], fileName), mode="w", newline="") as csv_file:
+        csv_writer = csv.writer(
+            csv_file, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL
+        )
+        csv_writer.writerow(
+            ["date", "time", "description", "beneficiary", "value", "currency"]
+        )
         for index in database:
-            csv_writer.writerow([index.date, index.time, index.description, index.beneficiary, str(index.value), index.currency])
+            csv_writer.writerow(
+                [
+                    index.date,
+                    index.time,
+                    index.description,
+                    index.beneficiary,
+                    str(index.value),
+                    index.currency,
+                ]
+            )
+
 
 """def mailSender(message):
     print(message)
