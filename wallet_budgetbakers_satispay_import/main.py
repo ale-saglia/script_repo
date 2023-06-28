@@ -30,6 +30,9 @@ class Entry:
         else:
             self.description = ""
 
+    def __repr__(self):
+        return str(self.date)
+
 
 def main():
     from tkinter import Tk
@@ -39,8 +42,10 @@ def main():
     filename = (
         askopenfilename()
     )
+    print("File selected: " + filename + "\n")
     loadCSV(filename)
     writeCSV("output.csv")
+    input("Press Enter to continue...")
 
 
 def loadCSV(fileName):
@@ -49,7 +54,9 @@ def loadCSV(fileName):
         line_count = 0
         for row in csv_reader:
             if line_count > 0:
-                database.append(Entry(row[1], row[3], row[4], row[5], row[6]))
+                entry=Entry(row[1], row[3], row[4], row[5], row[6])
+                database.append(entry)
+                print(entry)
             line_count += 1
 
 
